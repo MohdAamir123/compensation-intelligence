@@ -57,7 +57,9 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const [compare, setCompare] = useState<string[]>([]);
+  // Stores the complete selected records instead of only their IDs.
+  // This allows comparison across different searches/filters.
+  const [compare, setCompare] = useState<Compensation[]>([]);
 
   async function fetchCompensation() {
     try {
@@ -100,10 +102,16 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [search, company, location, level, sort, page]);
 
-  function toggleCompare(id: string) {
+  function toggleCompare(item: Compensation) {
     setCompare((current) => {
-      if (current.includes(id)) {
-        return current.filter((item) => item !== id);
+      const alreadySelected = current.some(
+        (record) => record.id === item.id
+      );
+
+      if (alreadySelected) {
+        return current.filter(
+          (record) => record.id !== item.id
+        );
       }
 
       if (current.length >= 3) {
@@ -111,7 +119,7 @@ export default function Home() {
         return current;
       }
 
-      return [...current, id];
+      return [...current, item];
     });
   }
 
@@ -133,8 +141,10 @@ export default function Home() {
     }
 
     const average =
-      records.reduce((sum, item) => sum + item.totalComp, 0) /
-      records.length;
+      records.reduce(
+        (sum, item) => sum + item.totalComp,
+        0
+      ) / records.length;
 
     const highest = Math.max(
       ...records.map((item) => item.totalComp)
@@ -408,14 +418,18 @@ export default function Home() {
 
                 <div>
                   <button
-                    onClick={() => toggleCompare(item.id)}
+                    onClick={() => toggleCompare(item)}
                     className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-                      compare.includes(item.id)
+                      compare.some(
+                        (record) => record.id === item.id
+                      )
                         ? "bg-cyan-400 text-slate-950"
                         : "border border-white/10 bg-white/5 hover:bg-white/10"
                     }`}
                   >
-                    {compare.includes(item.id)
+                    {compare.some(
+                      (record) => record.id === item.id
+                    )
                       ? "Selected"
                       : "Compare"}
                   </button>
@@ -435,7 +449,9 @@ export default function Home() {
             <button
               disabled={page === 1}
               onClick={() =>
-                setPage((current) => Math.max(1, current - 1))
+                setPage((current) =>
+                  Math.max(1, current - 1)
+                )
               }
               className="rounded-xl border border-white/10 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-30"
             >
@@ -479,9 +495,11 @@ export default function Home() {
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
               <div className="text-2xl">01</div>
+
               <h3 className="mt-5 text-xl font-semibold">
                 Base salary
               </h3>
+
               <p className="mt-3 text-sm leading-6 text-slate-500">
                 Fixed annual compensation paid as salary.
               </p>
@@ -489,9 +507,11 @@ export default function Home() {
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
               <div className="text-2xl">02</div>
+
               <h3 className="mt-5 text-xl font-semibold">
                 Bonus
               </h3>
+
               <p className="mt-3 text-sm leading-6 text-slate-500">
                 Annual performance or joining incentives.
               </p>
@@ -499,9 +519,11 @@ export default function Home() {
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
               <div className="text-2xl">03</div>
+
               <h3 className="mt-5 text-xl font-semibold">
                 Equity
               </h3>
+
               <p className="mt-3 text-sm leading-6 text-slate-500">
                 Annualized value of stock or equity compensation.
               </p>
@@ -537,13 +559,7 @@ export default function Home() {
             </div>
 
             <div className="mt-8 grid gap-5 md:grid-cols-3">
-              {compare.map((id) => {
-                const item = records.find(
-                  (record) => record.id === id
-                );
-
-                if (!item) return null;
-
+              {compare.map((item) => {
                 return (
                   <div
                     key={item.id}
